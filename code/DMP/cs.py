@@ -51,9 +51,11 @@ class CanonicalSystem():
     def step_discrete(self, tau=1.0):
         dx = -self.alpha_x*self.x*self.dt
         self.x += tau*dx
+        return self.x
 
     def step_rhythmic(self, tau=1.0):
         self.x += tau*self.dt
+        return self.x
 
 
 #%% test code

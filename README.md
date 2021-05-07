@@ -34,7 +34,11 @@ Requirements:
 
 ## Discrete DMP test
 
-[img]
+The DMP model is used to model and reproduce sine and cosine trajectories with a limited time.
+
+![DMP_discrete](pic/DMP_discrete.png)
+
+The solid curves represent the demonstrated trajectories, the dashed curves represent the reproduced trajectories by DMP models with the same and different initial and goal positions.
 
 
 
@@ -42,7 +46,7 @@ Requirements:
 
 ## Rhythmic DMP test
 
-[img]
+![DMP_discrete](README.assets/DMP_rhythmic.png)
 
 
 
@@ -50,7 +54,7 @@ Requirements:
 
 ## Reference:
 
-The reference paper can be found at:
+The reference paper can be found at the folder named 'paper', and can also be downloaded at:
 
 - [2002 Stefan Schaal](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.142.3886)
 

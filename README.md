@@ -12,12 +12,13 @@ The corresponding tutorial can be found at：
 
 ---
 
-The code has been tested on Windows 10 with Anaconda 3,  and NOT tested on Ubuntu or Mac. Since the code is very simple, the author belive it works well on the other system with Anaconda 3.
+The code has been tested on Windows 10 with Anaconda 3,  and NOT tested on Ubuntu or Mac. Since the code is very simple, the author belive it also works well on the other system with Anaconda 3.
 
 Requirements:
 
 - Python 3.6+
 - Numpy
+- Scipy
 - Matplotlib
 
 
@@ -26,7 +27,9 @@ Requirements:
 
 ## Canonical system test
 
-[img]
+Canonical system with different parameters:
+
+![cs](README.assets/cs.png)
 
 
 
@@ -36,7 +39,7 @@ Requirements:
 
 The DMP model is used to model and reproduce sine and cosine trajectories with a limited time.
 
-![DMP_discrete](pic/DMP_discrete.png)
+![DMP_discrete](README.assets/DMP_discrete.png)
 
 The solid curves represent the demonstrated trajectories, the dashed curves represent the reproduced trajectories by DMP models with the same and different initial and goal positions.
 
@@ -46,7 +49,23 @@ The solid curves represent the demonstrated trajectories, the dashed curves repr
 
 ## Rhythmic DMP test
 
-![DMP_discrete](README.assets/DMP_rhythmic.png)
+For demonstrated trajecotry with only one dimension.
+
+![DMP_discrete](README.assets/DMP_rhythmic_1.png)
+
+For demonstrated trajecotry with two dimensions.
+
+![DMP_discrete](README.assets/DMP_rhythmic_2.png)
+
+---
+
+# Simulation on CoppeliaSim (V-REP)
+
+## Discrete DMP
+
+
+
+## Rhythmic DMP
 
 
 

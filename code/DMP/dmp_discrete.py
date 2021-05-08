@@ -31,7 +31,7 @@ class dmp_discrete():
 
         # canonical system
         self.cs = CanonicalSystem(dt=self.dt, **kwargs)
-        self.timesteps = int(self.cs.run_time / self.dt)
+        self.timesteps = round(self.cs.run_time / self.dt)
 
         # generate centers for Gaussian basis functions
         self.generate_centers()
@@ -148,6 +148,12 @@ class dmp_discrete():
 
 
     def reproduce(self, tau=None, initial=None, goal=None):
+        # set temporal scaling
+        if tau == None:
+            timesteps = self.timesteps
+        else:
+            timesteps = round(self.timesteps/tau)
+
         # set initial state
         if initial != None:
             self.y0 = initial
@@ -156,20 +162,14 @@ class dmp_discrete():
         if goal != None:
             self.goal = goal
         
-        # set temporal scaling
-        if tau != None:
-            self.tau = tau
-            self.timesteps = int(self.timesteps/tau)
-
         # reset state
         self.reset_state()
 
+        y_reproduce = np.zeros((timesteps, self.n_dmps))
+        dy_reproduce = np.zeros((timesteps, self.n_dmps))
+        ddy_reproduce = np.zeros((timesteps, self.n_dmps))
 
-        y_reproduce = np.zeros((self.timesteps, self.n_dmps))
-        dy_reproduce = np.zeros((self.timesteps, self.n_dmps))
-        ddy_reproduce = np.zeros((self.timesteps, self.n_dmps))
-
-        for t in range(self.timesteps):
+        for t in range(timesteps):
             y_reproduce[t], dy_reproduce[t], ddy_reproduce[t] = self.step(tau=tau)
         
         return y_reproduce, dy_reproduce, ddy_reproduce
@@ -197,14 +197,14 @@ class dmp_discrete():
 
 #%% test code
 if __name__ == "__main__":
-    data_len = 100
+    data_len = 500
     y_demo = np.zeros((2, data_len))
     t = np.linspace(0, 1.5*np.pi, data_len)
     y_demo[0,:] = np.sin(t)
     y_demo[1,:] = np.cos(t)
     
     # DMP learning
-    dmp = dmp_discrete(n_dmps=2, n_bfs=100, dt=0.01)
+    dmp = dmp_discrete(n_dmps=2, n_bfs=100, dt=1.0/data_len)
     dmp.learning(y_demo, plot=False)
 
     # reproduce learned trajectory
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     # set new initial and goal poisitions
     y_reproduce_2, dy_reproduce_2, ddy_reproduce_2 = dmp.reproduce(tau=0.5, initial=[0.2, 0.8], goal=[-0.6, 0.2])
 
-    plt.figure()
+    plt.figure(figsize=(10, 5))
     plt.plot(y_demo[0,:], 'g', label='demo sine')
     plt.plot(y_demo[1,:], 'b', label='demo cosine')
     plt.plot(y_reproduce[:,0], 'r--', label='reproduce sine')
@@ -223,5 +223,3 @@ if __name__ == "__main__":
     plt.legend()
     plt.grid()
     plt.show()
-
-# %%

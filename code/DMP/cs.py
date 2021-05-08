@@ -9,7 +9,7 @@ import numpy as np
 
 #%% define canonical system
 class CanonicalSystem():
-    def __init__(self, alpha_x=1.0, dt=0.001, type='discrete'):
+    def __init__(self, alpha_x=1.0, dt=0.01, type='discrete'):
         self.x = 1.0
         self.alpha_x = alpha_x
         self.dt = dt
@@ -22,7 +22,7 @@ class CanonicalSystem():
         else:
             print('Initialize Canonical system failed, can not recognize DMP type: ' + type)
         
-        self.timesteps = int(self.run_time/self.dt)
+        self.timesteps = round(self.run_time/self.dt)
         self.reset_state()
 
     def run(self, **kwargs): # run to goal state

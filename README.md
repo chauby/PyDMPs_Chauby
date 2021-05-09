@@ -1,4 +1,4 @@
-# Dynamic Movement Primitives
+# Dynamic Movement Primitives and simulations on UR5
 
 ---
 
@@ -6,10 +6,8 @@ This code is a Python implementation of DMPs by Chauby (Email: chaubyZou@163.com
 
 The corresponding tutorial can be found at：
 
-- Zhihu：
-- Wechat：
-
-
+- Zhihu：[Dynamic Movement Primitives介绍及Python实现与UR5机械臂仿真 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/370813641)
+- Wechat：https://mp.weixin.qq.com/s/a-cQc8nW-jVJk7KwNWMojQ
 
 
 
@@ -118,3 +116,8 @@ The reference paper can be found at the folder named 'paper', and can also be do
 
 - [2013 Auke Ijspeert](http://www-clmc.usc.edu/publications/I/ijspeert-NC2013.pdf)
 
+
+
+For more tutorials about the robot planning and control, please refer to:
+
+![qrcode](README.assets/qrcode.jpg)

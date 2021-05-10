@@ -14,7 +14,7 @@ class dmp_rhythmic():
 
         self.goal = np.ones(n_dmps) # for multiple dimensions
 
-        self.alpha_y = np.ones(n_dmps) * 25.0 if alpha_y is None else alpha_y
+        self.alpha_y = np.ones(n_dmps) * 60.0 if alpha_y is None else alpha_y
         self.beta_y = self.alpha_y / 4.0 if beta_y is None else beta_y
         self.tau = 1.0
 
@@ -155,9 +155,9 @@ class dmp_rhythmic():
             f = r[d]*np.dot(psi, self.w[d]) / np.sum(psi)
 
             # generate reproduced trajectory
-            self.ddy[d] = (tau**2)*(self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - self.y[d]) - self.dy[d]/tau) + f)
+            self.ddy[d] = self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - self.y[d]) - self.dy[d]) + f
             self.dy[d] += tau*self.ddy[d]*self.dt
-            self.y[d] += self.dy[d]*self.dt
+            self.y[d] += tau*self.dy[d]*self.dt
         
         return self.y, self.dy, self.ddy
 

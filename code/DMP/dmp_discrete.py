@@ -21,7 +21,7 @@ class dmp_discrete():
         self.y0 = np.zeros(n_dmps)  # for multiple dimensions
         self.goal = np.ones(n_dmps) # for multiple dimensions
 
-        self.alpha_y = np.ones(n_dmps) * 25.0 if alpha_y is None else alpha_y
+        self.alpha_y = np.ones(n_dmps) * 60.0 if alpha_y is None else alpha_y
         self.beta_y = self.alpha_y / 4.0 if beta_y is None else beta_y
         self.tau = 1.0
 
@@ -76,7 +76,12 @@ class dmp_discrete():
         psi_track = self.generate_psi(x_track)
 
         for d in range(self.n_dmps):
-            delta = self.goal[d] - self.y0[d]
+            # ------------ Original DMP in Schaal 2002
+            # delta = self.goal[d] - self.y0[d]
+            
+            # ------------ Modified DMP in Schaal 2008
+            delta = 1.0
+
             for b in range(self.n_bfs):
                 # as both number and denom has x(g-y_0) term, thus we can simplify the calculation process
                 numer = np.sum(x_track * psi_track[:,b] * f_target[:,d])
@@ -84,6 +89,7 @@ class dmp_discrete():
                 # numer = np.sum(psi_track[:,b] * f_target[:,d]) # the simpler calculation
                 # denom = np.sum(x_track * psi_track[:,b])
                 self.w[d, b] = numer / (denom*delta)
+
 
         return self.w
 
@@ -120,9 +126,15 @@ class dmp_discrete():
         # ddy_demo = np.hstack((np.zeros((self.n_dmps, 1)), ddy_demo))
         # # ddy_demo = np.hstack((ddy_demo[:,0].reshape(self.n_dmps, 1), ddy_demo))
 
+        x_track = self.cs.run()
         f_target = np.zeros((y_demo.shape[1], self.n_dmps))
         for d in range(self.n_dmps):
-            f_target[:,d] = ddy_demo[d] - (self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - y_demo[d]) - dy_demo[d]))
+            # ---------- Original DMP in Schaal 2002
+            # f_target[:,d] = ddy_demo[d] - self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - y_demo[d]) - dy_demo[d])
+
+            # ---------- Modified DMP in Schaal 2008, fixed the problem of g-y_0 -> 0
+            k = self.alpha_y[d]
+            f_target[:,d] = (ddy_demo[d] - self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - y_demo[d]) - dy_demo[d]))/k + x_track*(self.goal[d] - self.y0[d])
         
         self.generate_weights(f_target)
 
@@ -185,12 +197,17 @@ class dmp_discrete():
 
         for d in range(self.n_dmps):
             # generate forcing term
-            f = np.dot(psi, self.w[d])*x*(self.goal[d] - self.y0[d]) / np.sum(psi)
+            # ------------ Original DMP in Schaal 2002
+            # f = np.dot(psi, self.w[d])*x*(self.goal[d] - self.y0[d]) / np.sum(psi)
+
+            # ---------- Modified DMP in Schaal 2008, fixed the problem of g-y_0 -> 0
+            k = self.alpha_y[d]
+            f = k*(np.dot(psi, self.w[d])*x / np.sum(psi)) - k*(self.goal[d] - self.y0[d])*x
 
             # generate reproduced trajectory
-            self.ddy[d] = (tau**2)*(self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - self.y[d]) - self.dy[d]/tau) + f)
+            self.ddy[d] = self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - self.y[d]) - self.dy[d]) + f
             self.dy[d] += tau*self.ddy[d]*self.dt
-            self.y[d] += self.dy[d]*self.dt
+            self.y[d] += tau*self.dy[d]*self.dt
         
         return self.y, self.dy, self.ddy
 
@@ -198,28 +215,63 @@ class dmp_discrete():
 #%% test code
 if __name__ == "__main__":
     data_len = 500
-    y_demo = np.zeros((2, data_len))
+
+    # ----------------- For different initial and goal positions
     t = np.linspace(0, 1.5*np.pi, data_len)
+    y_demo = np.zeros((2, data_len))
     y_demo[0,:] = np.sin(t)
     y_demo[1,:] = np.cos(t)
     
     # DMP learning
-    dmp = dmp_discrete(n_dmps=2, n_bfs=100, dt=1.0/data_len)
+    dmp = dmp_discrete(n_dmps=y_demo.shape[0], n_bfs=100, dt=1.0/data_len)
     dmp.learning(y_demo, plot=False)
 
     # reproduce learned trajectory
     y_reproduce, dy_reproduce, ddy_reproduce = dmp.reproduce()
 
     # set new initial and goal poisitions
-    y_reproduce_2, dy_reproduce_2, ddy_reproduce_2 = dmp.reproduce(tau=0.5, initial=[0.2, 0.8], goal=[-0.6, 0.2])
+    y_reproduce_2, dy_reproduce_2, ddy_reproduce_2 = dmp.reproduce(tau=0.5, initial=[0.2, 0.8], goal=[-0.5, 0.2])
 
     plt.figure(figsize=(10, 5))
     plt.plot(y_demo[0,:], 'g', label='demo sine')
-    plt.plot(y_demo[1,:], 'b', label='demo cosine')
     plt.plot(y_reproduce[:,0], 'r--', label='reproduce sine')
-    plt.plot(y_reproduce[:,1], 'm--', label='reproduce cosine')
     plt.plot(y_reproduce_2[:,0], 'r-.', label='reproduce 2 sine')
+    plt.plot(y_demo[1,:], 'b', label='demo cosine')
+    plt.plot(y_reproduce[:,1], 'm--', label='reproduce cosine')
     plt.plot(y_reproduce_2[:,1], 'm-.', label='reproduce 2 cosine')
     plt.legend()
     plt.grid()
+    plt.xlabel('time')
+    plt.ylabel('y')
+
+
+    # ----------------- For same initial and goal positions
+    t = np.linspace(0, 2*np.pi, data_len)
+
+    y_demo = np.zeros((2, data_len))
+    y_demo[0,:] = np.sin(t)
+    y_demo[1,:] = np.cos(t)
+
+    # DMP learning
+    dmp = dmp_discrete(n_dmps=y_demo.shape[0], n_bfs=400, dt=1.0/data_len)
+    dmp.learning(y_demo, plot=False)
+
+    # reproduce learned trajectory
+    y_reproduce, dy_reproduce, ddy_reproduce = dmp.reproduce()
+
+    # set new initial and goal poisitions
+    y_reproduce_2, dy_reproduce_2, ddy_reproduce_2 = dmp.reproduce(tau=0.8, initial=[0.2, 0.8], goal=[0.5, 1.0])
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(y_demo[0,:], 'g', label='demo sine')
+    plt.plot(y_reproduce[:,0], 'r--', label='reproduce sine')
+    plt.plot(y_reproduce_2[:,0], 'r-.', label='reproduce 2 sine')
+    plt.plot(y_demo[1,:], 'b', label='demo cosine')
+    plt.plot(y_reproduce[:,1], 'm--', label='reproduce cosine')
+    plt.plot(y_reproduce_2[:,1], 'm-.', label='reproduce 2 cosine')
+    plt.legend(loc="upper right")
+    plt.ylim(-1.5, 3)
+    plt.grid()
+    plt.xlabel('time')
+    plt.ylabel('y')
     plt.show()

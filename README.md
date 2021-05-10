@@ -50,6 +50,14 @@ The solid curves represent the demonstrated trajectories, the dashed curves repr
 
 
 
+The conventional DMP can not model the trajectory with a same start and goal positions, since $g-y_0$ will lead a problem for non-linear forcing term $(g-y_0)f$.
+
+The modified version of DMP can address the problem, the result is shown as follows:
+
+![Modified_DMP](README.assets/Modified_DMP.png)
+
+
+
 ---
 
 ## Rhythmic DMP

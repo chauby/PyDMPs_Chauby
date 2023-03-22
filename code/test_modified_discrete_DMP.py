@@ -9,8 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import sys
-sys.path.append('DMP')
+sys.path.append('./DMP')
 
+# from dmp_discrete_original import dmp_discrete
 from dmp_discrete import dmp_discrete
 
 # %%

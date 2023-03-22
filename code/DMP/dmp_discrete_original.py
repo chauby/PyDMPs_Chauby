@@ -80,18 +80,11 @@ class dmp_discrete():
         for d in range(self.n_dmps):
             # ------------ Original DMP in Schaal 2002
             delta = self.goal[d] - self.y0[d]
-            
-            # ------------ Modified DMP in Schaal 2008
-            # delta = 1.0
 
             for b in range(self.n_bfs):
                 # as both number and denom has x(g-y_0) term, thus we can simplify the calculation process
                 numer = np.sum(x_track * psi_track[:,b] * f_target[:,d])
                 denom = np.sum(x_track**2 * psi_track[:,b])
-                # numer = np.sum(psi_track[:,b] * f_target[:,d]) # the simpler calculation
-                # denom = np.sum(x_track * psi_track[:,b])
-                # self.w[d, b] = numer / (denom*delta)
-
 
                 self.w[d, b] = numer / denom
                 if abs(delta) > 1e-6:
@@ -139,10 +132,6 @@ class dmp_discrete():
         for d in range(self.n_dmps):
             # ---------- Original DMP in Schaal 2002
             f_target[:,d] = ddy_demo[d] - self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - y_demo[d]) - dy_demo[d])
-
-            # ---------- Modified DMP in Schaal 2008, fixed the problem of g-y_0 -> 0
-            # k = self.alpha_y[d]
-            # f_target[:,d] = (ddy_demo[d] - self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - y_demo[d]) - dy_demo[d]))/k + x_track*(self.goal[d] - self.y0[d])
         
         self.generate_weights(f_target)
 
@@ -207,10 +196,6 @@ class dmp_discrete():
             # generate forcing term
             # ------------ Original DMP in Schaal 2002
             f = np.dot(psi, self.w[d])*x*(self.goal[d] - self.y0[d]) / np.sum(psi)
-
-            # ---------- Modified DMP in Schaal 2008, fixed the problem of g-y_0 -> 0
-            # k = self.alpha_y[d]
-            # f = k*(np.dot(psi, self.w[d])*x / np.sum(psi)) - k*(self.goal[d] - self.y0[d])*x
 
             # generate reproduced trajectory
             self.ddy[d] = self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - self.y[d]) - self.dy[d]) + f

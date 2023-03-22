@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('./DMP')
 
-# from dmp_discrete_original import dmp_discrete
-from dmp_discrete import dmp_discrete
+# from dmp_discrete_original import dmp_discrete # original version
+from dmp_discrete import dmp_discrete # modified version
 
 # %%
 data_len = 200

@@ -213,9 +213,14 @@ class dmp_discrete():
 
             # ---------- Modified DMP in Schaal 2008, fixed the problem of g-y_0 -> 0
             k = self.alpha_y[d]
-            # f = k*(np.dot(psi, self.w[d])*x / np.sum(psi)) - k*(self.goal[d] - self.y0[d])*x
-            self.delta_2[d] = self.goal[d] - self.y0[d]
-            f = k*(np.dot(psi, self.w[d])*x*(self.delta_2[d]/self.delta[d]) / np.sum(psi)) - k*(self.goal[d] - self.y0[d])*x
+            # f = k*(np.dot(psi, self.w[d])*x / np.sum(psi)) - k*(self.goal[d] - self.y0[d])*x # Modified DMP
+            
+            self.delta_2[d] = self.goal[d] - self.y0[d] # Modified DMP extended
+            if abs(self.delta[d]) > 1e-5:
+                k2 = self.delta_2[d]/self.delta[d]
+            else:
+                k2 = 1.0
+            f = k*(np.dot(psi, self.w[d])*x*k2 / np.sum(psi)) - k*(self.goal[d] - self.y0[d])*x
 
             # generate reproduced trajectory
             self.ddy[d] = self.alpha_y[d]*(self.beta_y[d]*(self.goal[d] - self.y[d]) - self.dy[d]) + f

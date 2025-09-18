@@ -3,6 +3,8 @@
 import time
 import numpy as np
 import pandas as pd
+import os
+from datetime import datetime
 
 import sys
 sys.path.append('./UR5/VREP_RemoteAPIs')
@@ -64,41 +66,75 @@ if (return_code == vrep_sim.simx_return_ok):
 
 time.sleep(0.1)
 
+
+# 创建以当前时间为名的文件夹
+current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+output_dir = f"output_{current_time}"
+os.makedirs(output_dir, exist_ok=True)
+print(f"创建输出文件夹: {output_dir}")
+from matplotlib import font_manager
+font_path = './msyh.ttf'  # 替换为你的字体文件路径
+font_prop = font_manager.FontProperties(fname=font_path)
+
+
 #%% DMP learning
 # get demonstrated trajectory from file
 df = pd.read_csv('./demo_trajectory/demo_trajectory_for_discrete_dmp.csv', header=None)
 reference_trajectory = np.array(df)
 data_dim = reference_trajectory.shape[0]
 data_len = reference_trajectory.shape[1]
+# data_dim: 3
+# data_len: 697
+# (3, 697)
 
+# n_bfs激活函数的数量是不是最好和step步数保持在一个数量级
 dmp = dmp_discrete(n_dmps=data_dim, n_bfs=1000, dt=1.0/data_len)
 dmp.learning(reference_trajectory)
 
 reproduced_trajectory, _, _ = dmp.reproduce()
 
+# 保存第一个3D图
 fig = plt.figure()
-ax=Axes3D(fig)
-plt.plot(reference_trajectory[0,:], reference_trajectory[1,:], reference_trajectory[2,:], 'g', label='reference')
-plt.plot(reproduced_trajectory[:,0], reproduced_trajectory[:,1], reproduced_trajectory[:,2], 'r--', label='reproduce')
-plt.legend()
+ax = fig.add_subplot(111, projection='3d')
+ax.view_init(elev=20, azim=45)
+ax.grid(True)
+ax.plot(reference_trajectory[0,:], reference_trajectory[1,:], reference_trajectory[2,:], 'g', label='reference', linewidth=2)
+ax.plot(reproduced_trajectory[:,0], reproduced_trajectory[:,1], reproduced_trajectory[:,2], 'r--', label='reproduce', linewidth=2)
+ax.legend()
+ax.set_title('DMP 3D轨迹对比', fontproperties=font_prop)
+ax.set_xlabel('X位置', fontproperties=font_prop)
+ax.set_ylabel('Y位置', fontproperties=font_prop)
+ax.set_zlabel('Z位置', fontproperties=font_prop)
+plt.savefig(f'{output_dir}/dmp_3d_trajectory_comparison.png', dpi=300, bbox_inches='tight')
+plt.close()
 
-fig = plt.figure()
+# 保存多子图
+fig = plt.figure(figsize=(10, 8))
 plt.subplot(311)
 plt.plot(reference_trajectory[0,:], 'g', label='reference')
 plt.plot(reproduced_trajectory[:,0], 'r--', label='reproduce')
 plt.legend()
+plt.title('X轴轨迹对比', fontproperties=font_prop)
+plt.ylabel('X位置', fontproperties=font_prop)
 
 plt.subplot(312)
 plt.plot(reference_trajectory[1,:], 'g', label='reference')
 plt.plot(reproduced_trajectory[:,1], 'r--', label='reproduce')
 plt.legend()
+plt.title('Y轴轨迹对比', fontproperties=font_prop)
+plt.ylabel('Y位置', fontproperties=font_prop)
 
 plt.subplot(313)
 plt.plot(reference_trajectory[2,:], 'g', label='reference')
 plt.plot(reproduced_trajectory[:,2], 'r--', label='reproduce')
 plt.legend()
+plt.title('Z轴轨迹对比', fontproperties=font_prop)
+plt.ylabel('Z位置', fontproperties=font_prop)
+plt.xlabel('时间步', fontproperties=font_prop)
 
-plt.draw()
+plt.tight_layout()
+plt.savefig(f'{output_dir}/dmp_trajectory_components.png', dpi=300, bbox_inches='tight')
+plt.close()
 
 #%% the main loop
 print("Main loop is begining ...")
@@ -109,6 +145,7 @@ reproduced_trajectory_record_y = np.zeros((data_len, max_loop))
 reproduced_trajectory_record_z = np.zeros((data_len, max_loop))
 
 for loop in range(max_loop):
+    print('loop: %d' % loop)
     if loop == 0:
         # DMP reproduce the reference trajectory
         reproduced_trajectory, _, _ = dmp.reproduce()
@@ -130,19 +167,22 @@ for loop in range(max_loop):
         # DMP reproduce with new initial and goal positions
         reproduced_trajectory, _, _ = dmp.reproduce(initial=initial_pos, goal=goal_pos)
 
-    data_len = reproduced_trajectory.shape[0]
-    reproduced_trajectory_record_x[:,loop] = reproduced_trajectory[:,0]
-    reproduced_trajectory_record_y[:,loop] = reproduced_trajectory[:,1]
-    reproduced_trajectory_record_z[:,loop] = reproduced_trajectory[:,2]
+    current_data_len = reproduced_trajectory.shape[0]
+    # 确保数组大小匹配
+    min_len = min(data_len, current_data_len)
+    reproduced_trajectory_record_x[:min_len,loop] = reproduced_trajectory[:min_len,0]
+    reproduced_trajectory_record_y[:min_len,loop] = reproduced_trajectory[:min_len,1]
+    reproduced_trajectory_record_z[:min_len,loop] = reproduced_trajectory[:min_len,2]
+    print(f'Loop {loop}: 记录轨迹数据，长度: {min_len}')
 
     # go to the goal position
-    for i in range(data_len):
+    for i in range(current_data_len):
         UR5_target_pos = reproduced_trajectory[i,:]
         vrep_sim.simxSetObjectPosition(client_ID, via_dummy_handle, -1, UR5_target_pos, vrep_sim.simx_opmode_oneshot)
         vrep_sim.simxSynchronousTrigger(client_ID)  # trigger one simulation step
 
     # go back to the initial position
-    for i in range(data_len-1, 0, -1):
+    for i in range(current_data_len-1, 0, -1):
         UR5_target_pos = reproduced_trajectory[i,:]
         vrep_sim.simxSetObjectPosition(client_ID, via_dummy_handle, -1, UR5_target_pos, vrep_sim.simx_opmode_oneshot)
         vrep_sim.simxSynchronousTrigger(client_ID)  # trigger one simulation step
@@ -152,13 +192,29 @@ vrep_sim.simxFinish(-1)  # Close the connection
 print('Program terminated')
 
 #%% Plot
-fig=plt.figure()
-ax=Axes3D(fig)
-plt.plot(reference_trajectory[0,:], reference_trajectory[1,:], reference_trajectory[2,:], 'g', label='reference')
-for i in range(max_loop):
-    plt.plot(reproduced_trajectory_record_x[:,i], reproduced_trajectory_record_y[:,i], reproduced_trajectory_record_z[:,i], '--')
+# 保存最终的3D图
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.view_init(elev=20, azim=45)
+ax.grid(True)
+#目前只绘制参考轨迹。无法给出改变起始点和目标点后的参照轨迹
+ax.plot(reference_trajectory[0,:], reference_trajectory[1,:], reference_trajectory[2,:], 'g', label='reference', linewidth=2)
 
-plt.legend()
-plt.xlabel('x')
-plt.ylabel('y')
-plt.show()
+# 绘制所有记录的轨迹
+for i in range(max_loop):
+    # 检查是否有非零数据
+    if np.any(reproduced_trajectory_record_x[:,i] != 0):
+        ax.plot(reproduced_trajectory_record_x[:,i], reproduced_trajectory_record_y[:,i], reproduced_trajectory_record_z[:,i], '--', alpha=0.7, label=f'reproduce_{i+1}')
+
+ax.legend()
+ax.set_xlabel('X位置', fontproperties=font_prop)
+ax.set_ylabel('Y位置', fontproperties=font_prop)
+ax.set_zlabel('Z位置', fontproperties=font_prop)
+ax.set_title('DMP多轮轨迹对比', fontproperties=font_prop)
+plt.savefig(f'{output_dir}/dmp_multiple_trajectories.png', dpi=300, bbox_inches='tight')
+plt.close()
+
+print(f"记录的轨迹数据形状: {reproduced_trajectory_record_x.shape}")
+print(f"非零轨迹数量: {np.sum(np.any(reproduced_trajectory_record_x != 0, axis=0))}")
+
+print(f"所有图片已保存到文件夹: {output_dir}")

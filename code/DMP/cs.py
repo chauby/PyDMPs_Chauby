@@ -25,6 +25,7 @@ class CanonicalSystem():
         self.timesteps = round(self.run_time/self.dt)
         self.reset_state()
 
+    # 初始化 state，每个相位的x坐标
     def run(self, **kwargs): # run to goal state
         if 'tau' in kwargs:
             timesteps = int(self.timesteps / kwargs['tau'])

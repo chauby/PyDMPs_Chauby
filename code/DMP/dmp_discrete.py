@@ -64,6 +64,7 @@ class dmp_discrete():
             for i, t in enumerate(t_track):
                 if abs(t_centers[n] - t) <= cs.dt: # find the x center corresponding to the time center
                     self.psi_centers[n] = x_track[i]
+                    break; #找到一个就跳出循环
         
         return self.psi_centers
 
